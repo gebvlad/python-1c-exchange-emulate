@@ -214,19 +214,6 @@ def get_exchange_files():
     return _files_for_send
 
 
-def get_files_for_upload(_zip):
-    files = get_exchange_files()
-    _files_for_send = []
-    for exchange_file in files:
-        if 'yes' == _zip:
-            if '.py' not in exchange_file and '.xml' not in exchange_file:
-                _files_for_send.append(exchange_file)
-        else:
-            if '.py' not in exchange_file:
-                _files_for_send.append(exchange_file)
-    return _files_for_send
-
-
 def get_files_from_work_directory():
     path = os.getcwd()
     files = os.listdir(path)
