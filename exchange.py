@@ -7,6 +7,7 @@ import string
 import time
 import urllib
 from re import findall
+import sys
 from sys import exit as die
 from sys import stderr
 from zipfile import ZipFile, ZIP_DEFLATED
@@ -20,15 +21,6 @@ try:
     from termcolor import colored
 except ImportError:
     die('В системе не установлен модуль termcolor\nДля установки выполните команду\npip install termcolor')
-
-# Сайт на который выполняется выгрузка
-exchange_url = '<YOUR_HOST_WITHOUT_HTTP>'
-# Точка обмена
-exchange_path = '<YOUR_EXCHANGE_PATH>'
-# Логин
-login = '<YOUR_EXCHANGE_USER>'
-# Пароль
-password = '<YOUR_EXCHANGE_PASS>'
 
 
 class UploadInChunks(object):
@@ -221,38 +213,90 @@ def get_files_from_work_directory():
 
 
 def make_import(_exchange_url, _exchange_path, _login, _password):
-    start_time = time.time()
-    print colored('Запущен обмен ' + datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S") + '\n', 'blue')
-    print 'Точка обмена: ' + colored(exchange_url + exchange_path, 'blue') + '\n'
-    print 'Логин: ' + colored(login, 'blue') + '\n\nПароль: ' + colored(password, 'blue') + '\n'
-    print 'Рабочая директория: ', colored(os.getcwd(), 'blue') + '\n'
+    try:
+        start_time = time.time()
+        print colored('Запущен обмен ' + datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S") + '\n', 'blue')
+        print 'Точка обмена: ' + colored(exchange_url + exchange_path, 'blue') + '\n'
+        print 'Логин: ' + colored(login, 'blue') + '\n\nПароль: ' + colored(password, 'blue') + '\n'
+        print 'Рабочая директория: ', colored(os.getcwd(), 'blue') + '\n'
 
-    files_for_send = get_exchange_files()
-    print 'Обнаруженные файлы для импорта: ', colored(files_for_send, 'blue'), '\n'
+        files_for_send = get_exchange_files()
+        print 'Обнаруженные файлы для импорта: ', colored(files_for_send, 'blue'), '\n'
 
-    for file_for_upload in files_for_send:
-        exchange_begin_time = time.time()
-        print colored('Начало импорта [' + file_for_upload + ']', 'green')
-        session_id = step1(_exchange_url, _exchange_path, _login, _password)
-        res = step2(_exchange_url, _exchange_path, session_id)
+        for file_for_upload in files_for_send:
+            exchange_begin_time = time.time()
+            print colored('Начало импорта [' + file_for_upload + ']', 'green')
+            session_id = step1(_exchange_url, _exchange_path, _login, _password)
+            res = step2(_exchange_url, _exchange_path, session_id)
 
-        if is_exists_directories_with_files_for_upload() and res['zip'] != 'yes':
-            die('Присутствуют папки с файлами, их можно загрузить только архивом.\nПроверьте настройки компонента')
+            if is_exists_directories_with_files_for_upload() and res['zip'] != 'yes':
+                die('Присутствуют папки с файлами, их можно загрузить только архивом.\nПроверьте настройки компонента')
 
-        if res['zip'] == 'yes':
-            file_for_upload += '.zip'
-        else:
-            file_for_upload += '.xml'
+            if res['zip'] == 'yes':
+                file_for_upload += '.zip'
+            else:
+                file_for_upload += '.xml'
 
-        step3(_exchange_url, _exchange_path, session_id, file_for_upload)
-        step4(_exchange_url, _exchange_path, session_id, file_for_upload.replace('.zip', '.xml'))
-        print colored('Конец импорта.\n' + ("Время выполнения - %s секунд(ы)\n" % (time.time() - exchange_begin_time)),
-                      'green')
-    print colored('Обмен завершен ' + datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S") + '\n' + (
-        "Время выполнения - %s секунд(ы)\n" % (time.time() - start_time)), 'blue')
+            step3(_exchange_url, _exchange_path, session_id, file_for_upload)
+            step4(_exchange_url, _exchange_path, session_id, file_for_upload.replace('.zip', '.xml'))
+            print colored(
+                'Конец импорта.\n' + ("Время выполнения - %s секунд(ы)\n" % (time.time() - exchange_begin_time)),
+                'green')
+        print colored('Обмен завершен ' + datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S") + '\n' + (
+            "Время выполнения - %s секунд(ы)\n" % (time.time() - start_time)), 'blue')
 
-    return True
+        return True
 
+    except requests.exceptions.ConnectionError:
+        print colored('Ошибка подключения к точке обмена. Проверьте параметры подключения.\nОбмен прерван', 'red')
+
+        return False
+
+
+exchange_url = ''
+exchange_path = ''
+login = ''
+password = ''
+
+# если в скрипт переданы параметры, работаем с ними
+if len(sys.argv) > 1:
+    try:
+        # Сайт на который выполняется выгрузка
+        exchange_url = sys.argv[1]
+    except IndexError:
+        print colored('Не задан хост обмена', 'red')
+        die()
+
+    try:
+        # Точка обмена
+        exchange_path = sys.argv[2]
+    except IndexError:
+        print colored('Не задана URL обмена', 'red')
+        die()
+
+    try:
+        # Логин
+        login = sys.argv[3]
+    except IndexError:
+        print colored('Не задан логин', 'red')
+        die()
+
+    try:
+        # Пароль
+        password = sys.argv[4]
+    except IndexError:
+        print colored('Не задан пароль', 'red')
+        die()
+
+# если параметры не переданы ине установлены в скрипте, выводим информацию по испольованию
+elif exchange_url == '' and exchange_path == '' and login == '' and password == '':
+    print 'python ' + __file__ + colored(' <host> <url> <login> <password>', 'blue')
+    print colored('\t<host>\t\t', 'blue') + ' - Exchange host without http(s). For example: example.com'
+    print colored('\t<url>\t\t',
+                  'blue') + ' - URL to exchange 1C-Bitrix component. For example: /catalog/exchange_1c.php'
+    print colored('\t<login>\t\t', 'blue') + ' - Exchange user login'
+    print colored('\t<password>\t', 'blue') + ' - Exchange user password'
+    die()
 
 # Запустить обмен
 make_import(exchange_url, exchange_path, login, password)
