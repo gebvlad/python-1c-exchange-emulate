@@ -63,7 +63,7 @@ def step1(_exchange_url, _exchange_path, _login, _password):
     # type: (string, string, string, string, string) -> string
     print colored('Шаг #1: Авторизация', 'blue')
 
-    params = urllib.urlencode({'mode': 'checkauth'})
+    params = urllib.urlencode({'type': 'catalog', 'mode': 'checkauth'})
     url = 'http://' + _exchange_url + _exchange_path + '?' + params
     auth = 'Basic ' + string.strip(base64.encodestring(_login + ':' + _password))
 
@@ -87,7 +87,7 @@ def step2(_exchange_url, _exchange_path, _session_id):
     # type: (string, string) -> dict
     print colored('Шаг #2: Инициализация', 'blue')
 
-    params = urllib.urlencode({'mode': 'init'})
+    params = urllib.urlencode({'type': 'catalog', 'mode': 'init'})
     url = 'http://' + _exchange_url + _exchange_path + '?' + params
 
     result = requests.get(url, headers={'Cookie': 'PHPSESSID=' + _session_id}).text
@@ -108,7 +108,7 @@ def step3(_exchange_url, _exchange_path, _session_id, _file_for_upload):
     # type: (string, string, string, string) -> bool
     print colored('Шаг #3: Загрузка файлов', 'blue')
     print 'Загрузка файла ' + _file_for_upload
-    params = urllib.urlencode({'mode': 'file', 'filename': _file_for_upload})
+    params = urllib.urlencode({'type': 'catalog', 'mode': 'file', 'filename': _file_for_upload})
     url = 'http://' + _exchange_url + _exchange_path + '?' + params
     it = UploadInChunks(_file_for_upload, 10)
     r = requests.post(url, data=IterableToFileAdapter(it), headers={'Cookie': 'PHPSESSID=' + _session_id})
@@ -123,7 +123,7 @@ def step4(_exchange_url, _exchange_path, _session_id, _file_for_import):
     r = 'progress'
     count = 1
     while 'progress' in r:
-        params = urllib.urlencode({'mode': 'import', 'filename': _file_for_import})
+        params = urllib.urlencode({'type': 'catalog', 'mode': 'import', 'filename': _file_for_import})
         url = 'http://' + _exchange_url + _exchange_path + '?' + params
         r = requests.post(url, headers={'Cookie': 'PHPSESSID=' + _session_id}).text
         print colored('#' + count.__str__(), 'red'), r + '\n'
