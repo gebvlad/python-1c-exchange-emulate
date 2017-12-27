@@ -15,3 +15,13 @@ OR use only command line
         login          - Exchange user login
         password       - Exchange user password
 </code></pre>
+
+OR use docker container
+1. Create image
+<pre><code>
+docker build -t maksze/python-1c-exchange-emulate .
+</code></pre>
+2. Run in directory with files for exchange
+<pre><code>
+docker run -i -t -v $PWD:/opt/exchange-files maksze/python-1c-exchange-emulate example.com /catalog/exchange_1c.php login password
+</code></pre>
