@@ -125,7 +125,7 @@ def step4(_exchange_url, _exchange_path, _session_id, _file_for_import):
     while 'progress' in r:
         params = urllib.urlencode({'type': 'catalog', 'mode': 'import', 'filename': _file_for_import})
         url = 'http://' + _exchange_url + _exchange_path + '?' + params
-        r = requests.post(url, headers={'Cookie': 'PHPSESSID=' + _session_id}).text
+        r = requests.get(url, headers={'Cookie': 'PHPSESSID=' + _session_id}).text
         print colored('#' + count.__str__(), 'red'), r + '\n'
         count += 1
     return True
