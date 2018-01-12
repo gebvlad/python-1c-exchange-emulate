@@ -80,17 +80,17 @@ def step1(_exchange_url, _exchange_path, _login, _password):
         print 'Авторизация выполнена успешно\n'
 
     # Идентификатор сессии
-    return temp[2]
+    return temp[1] + '=' + temp[2]
 
 
-def step2(_exchange_url, _exchange_path, _session_id):
+def step2(_exchange_url, _exchange_path, _cookie):
     # type: (string, string) -> dict
     print colored('Шаг #2: Инициализация', 'blue')
 
     params = urllib.urlencode({'type': 'catalog', 'mode': 'init'})
     url = 'http://' + _exchange_url + _exchange_path + '?' + params
 
-    result = requests.get(url, headers={'Cookie': 'PHPSESSID=' + _session_id}).text
+    result = requests.get(url, headers={'Cookie': _cookie}).text
     print result + '\n'
 
     # выбираем полученные парметры
@@ -104,19 +104,19 @@ def step2(_exchange_url, _exchange_path, _session_id):
     return dict(zip=temp[1], file_limit=temp[3])
 
 
-def step3(_exchange_url, _exchange_path, _session_id, _file_for_upload):
+def step3(_exchange_url, _exchange_path, _cookie, _file_for_upload):
     # type: (string, string, string, string) -> bool
     print colored('Шаг #3: Загрузка файлов', 'blue')
     print 'Загрузка файла ' + _file_for_upload
     params = urllib.urlencode({'type': 'catalog', 'mode': 'file', 'filename': _file_for_upload})
     url = 'http://' + _exchange_url + _exchange_path + '?' + params
     it = UploadInChunks(_file_for_upload, 10)
-    r = requests.post(url, data=IterableToFileAdapter(it), headers={'Cookie': 'PHPSESSID=' + _session_id})
+    r = requests.post(url, data=IterableToFileAdapter(it), headers={'Cookie': _cookie})
     print r.text
     return True
 
 
-def step4(_exchange_url, _exchange_path, _session_id, _file_for_import):
+def step4(_exchange_url, _exchange_path, _cookie, _file_for_import):
     # type: (string, string, string, string) -> bool
     print colored('Шаг #4: Импорт', 'blue')
     print 'Импорт ' + _file_for_import + '\n'
@@ -125,7 +125,7 @@ def step4(_exchange_url, _exchange_path, _session_id, _file_for_import):
     while 'progress' in r:
         params = urllib.urlencode({'type': 'catalog', 'mode': 'import', 'filename': _file_for_import})
         url = 'http://' + _exchange_url + _exchange_path + '?' + params
-        r = requests.post(url, headers={'Cookie': 'PHPSESSID=' + _session_id}).text
+        r = requests.post(url, headers={'Cookie': _cookie}).text
         print colored('#' + count.__str__(), 'red'), r + '\n'
         count += 1
     return True
@@ -226,8 +226,8 @@ def make_import(_exchange_url, _exchange_path, _login, _password):
         for file_for_upload in files_for_send:
             exchange_begin_time = time.time()
             print colored('Начало импорта [' + file_for_upload + ']', 'green')
-            session_id = step1(_exchange_url, _exchange_path, _login, _password)
-            res = step2(_exchange_url, _exchange_path, session_id)
+            cookie = step1(_exchange_url, _exchange_path, _login, _password)
+            res = step2(_exchange_url, _exchange_path, cookie)
 
             if is_exists_directories_with_files_for_upload() and res['zip'] != 'yes':
                 die('Присутствуют папки с файлами, их можно загрузить только архивом.\nПроверьте настройки компонента')
@@ -237,8 +237,8 @@ def make_import(_exchange_url, _exchange_path, _login, _password):
             else:
                 file_for_upload += '.xml'
 
-            step3(_exchange_url, _exchange_path, session_id, file_for_upload)
-            step4(_exchange_url, _exchange_path, session_id, file_for_upload.replace('.zip', '.xml'))
+            step3(_exchange_url, _exchange_path, cookie, file_for_upload)
+            step4(_exchange_url, _exchange_path, cookie, file_for_upload.replace('.zip', '.xml'))
             print colored(
                 'Конец импорта.\n' + ("Время выполнения - %s секунд(ы)\n" % (time.time() - exchange_begin_time)),
                 'green')
